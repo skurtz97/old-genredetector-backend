@@ -266,5 +266,7 @@ app.get("/genres", async (req, res) => {
     res.json({ status: 500, msg: `Error: ${error.message}` });
   }
 });
-// Listen for requests on port 5000
-app.listen(5000, () => console.log(`Listening for authorization on port 5000`));
+
+const PORT = process.env.PORT || 8080;
+// Listen to the App Engine-specified port, or 8080 otherwise. If running locally, change this to whatever port is available.
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}...`));
