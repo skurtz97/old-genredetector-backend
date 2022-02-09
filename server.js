@@ -34,7 +34,9 @@ const artists_simplify = (artists) => {
   return artists.map((artist) => ({
     name: artist.name,
     popularity: artist.popularity,
+    followers: artist.followers,
     uri: artist.uri,
+    url: artist.external_urls.spotify,
     genres: artist.genres,
   }));
 };
