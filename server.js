@@ -18,7 +18,7 @@ const artist_simplify = (artist) => {
   return {
     name: artist.name,
     popularity: artist.popularity,
-    followers: artist.followers,
+    followers: artist.followers.total,
     uri: artist.uri,
     url: artist.external_urls.spotify,
     genres: artist.genres,
@@ -28,7 +28,7 @@ const artist_simplify = (artist) => {
 const track_simplify = (track) => {
   return {
     name: track.name,
-    artists: track.artists,
+    artists: track.artists.map((artist) => artist.name).join(", "),
     album: track.album.name,
     popularity: track.popularity,
     uri: track.uri,
@@ -46,6 +46,21 @@ const artist_search = async (q, offset, access_token) => {
   const search_config = {
     method: "get",
     url: `https://api.spotify.com/v1/search?${query_str}`,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + access_token,
+    },
+  };
+  console.log(search_config.url);
+  const results = await axios(search_config);
+  return results;
+};
+
+const artist_search_id = async (id, access_token) => {
+  const search_config = {
+    method: "get",
+    url: `https://api.spotify.com/v1/artists/${id}`,
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -80,7 +95,7 @@ const genre_search = async (q, offset, access_token) => {
 
 const track_search = async (q, offset, access_token) => {
   const query_str = qs.stringify({
-    query: q,
+    query: `track:\"${q}\"`,
     type: "track",
     limit: 50,
     offset: offset,
@@ -99,6 +114,20 @@ const track_search = async (q, offset, access_token) => {
   return results;
 };
 
+const track_search_id = async (id, access_token) => {
+  const search_config = {
+    method: "get",
+    url: `https://api.spotify.com/v1/tracks/${id}`,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + access_token,
+    },
+  };
+  console.log(search_config.url);
+  const results = await axios(search_config);
+  return results;
+};
 const app = express();
 app.use(cors());
 
@@ -133,9 +162,17 @@ app.get("/genre", async (req, res) => {
     }
 
     artists = artists.map(artist_simplify);
-    artists = artists.filter(
-      (artist) => artist.genres.indexOf(req.query.genre) != -1
-    );
+    artists = artists.filter((artist) => {
+      const index = artist.genres.indexOf(req.query.genre);
+      if (index != -1) {
+        const temp = artist.genres[0];
+        artist.genres[0] = artist.genres[index];
+        artist.genres[index] = temp;
+        return true;
+      } else {
+        return false;
+      }
+    });
     artists = artists.sort((a, b) => b.popularity - a.popularity);
 
     res.send(artists);
@@ -145,23 +182,52 @@ app.get("/genre", async (req, res) => {
   }
 });
 
-app.get("/artist", async (req, res) => {
-  console.log(`Beggining artist search for ${req.query.name}`);
+app.get("/artists", async (req, res) => {
+  console.log(`Begining artist search for ${req.query.name}`);
 
   try {
     const access_token = await get_access_token();
-    const response = await artist_search(req.query.name, 0, access_token);
-    let artists = response.data.artists.items;
+
+    let offset = 0;
+    let response = await artist_search(req.query.name, offset, access_token);
+    let artists = [].concat(response.data.artists.items);
+    const total = response.data.artists.total;
+    offset += 50;
+
+    while (offset < 1000 && offset < total) {
+      response = await artist_search(req.query.name, offset, access_token);
+      artists = artists.concat(response.data.artists.items);
+      offset += 50;
+    }
+
     artists = artists.map(artist_simplify);
+    artists = artists.sort((a, b) => b.popularity - a.popularity);
+
     res.send(artists);
   } catch (error) {
     console.log(`Error: ${error.message}`);
-    res.send(`Error: ${error.message}`);
+    res.send([]);
   }
 });
 
-app.get("/track", async (req, res) => {
-  console.log(`Beggining track search for ${req.query.name}`);
+app.get("/artist/:id", async (req, res) => {
+  console.log(`Beginning artist search for ${req.params.id}`);
+
+  try {
+    const access_token = await get_access_token();
+    const response = await artist_search_id(req.params.id, access_token);
+    let artist = response.data;
+    artist = artist_simplify(artist);
+    console.log(artist);
+    res.send([].concat(artist));
+  } catch (error) {
+    console.log(`Error: ${error.message}`);
+    res.send([]);
+  }
+});
+
+app.get("/tracks", async (req, res) => {
+  console.log(`Begining track search for ${req.query.name}`);
   try {
     const access_token = await get_access_token();
 
@@ -184,6 +250,22 @@ app.get("/track", async (req, res) => {
   } catch (error) {
     console.log(`Error: ${error.message}`);
     res.send(`Error: ${error.message}`);
+  }
+});
+
+app.get("/track/:id", async (req, res) => {
+  console.log(`Beginning track search for ${req.params.id}`);
+
+  try {
+    console.log(req.params.id);
+    const access_token = await get_access_token();
+    const response = await track_search_id(req.params.id, access_token);
+    let track = response.data;
+    track = track_simplify(track);
+    res.send([].concat(track));
+  } catch (error) {
+    console.log(`Error: ${error.message}`);
+    res.send([]);
   }
 });
 
