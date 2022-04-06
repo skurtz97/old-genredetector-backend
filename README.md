@@ -7,7 +7,7 @@ in Go using Wait groups is faster still.
 
 For comparison:
 
-When querying for a relatively large and general genre like rock, this backend will return all 1000 results (the maximum offset Spotify API will allow),
+When querying for a relatively large and general genre like rock, this implementation will return all 1000 results (the maximum offset Spotify API will allow),
 the combination of 1000/50 = 20 requests, in ~7 seconds. This is very unresponsive, since the program waits for one request to complete before beginning the next request
 
 The Promise.all() method reduces this to about ~2 seconds since all the requests are sent concurrently. The Go implementation is even better and can 
