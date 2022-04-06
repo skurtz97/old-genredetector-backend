@@ -11,4 +11,4 @@ When querying for a relatively large and general genre like rock, this implement
 the combination of 1000/50 = 20 requests, in ~7 seconds. This is very unresponsive, since the program waits for one request to complete before beginning the next request.
 
 The Promise.all() method reduces this to about ~2 seconds since all the requests are sent concurrently. The Go implementation is even better and can 
-complete all 20 requests in under a second, with less memory usage as well. I think this is because Go threads are much quicker to launch and Go has a relatively efficient scheduler, whereas Express is somewhat limited by Node JS in its concurrency model.
+complete all 20 requests in under a second, with less memory usage as well. I think this is because Go threads are much quicker to launch and Go has a relatively efficient scheduler, whereas NodeJS concurrency is more limited.
