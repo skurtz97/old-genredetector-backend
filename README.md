@@ -1,4 +1,4 @@
-# genre-detector-backend
+# genredetector-backend
 
 The old version of the backend to genre detector. Uses express js and doesn't  concurrently  query the Spotify API.
 
